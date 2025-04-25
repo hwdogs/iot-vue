@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { goodsApi } from '../api/goods'
+import { Plus, Search, Refresh, Calendar } from '@element-plus/icons-vue'
 
 // 数据
 const goodsList = ref([])
@@ -217,12 +218,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container-fluid">
-    <h1 class="page-title">商品管理</h1>
+  <div class="goods-container">
+    <div class="page-title">
+      <h1>商品管理</h1>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon> 新增商品
+      </el-button>
+    </div>
     
-    <div class="content-wrapper">
+    <div class="content-area">
       <!-- 搜索区域 -->
-      <div class="search-wrapper">
+      <div class="search-area">
         <el-form :model="searchForm" :inline="true" class="search-form">
           <el-form-item label="RFID标签">
             <el-input v-model="searchForm.rfidTag" placeholder="请输入RFID标签" clearable />
@@ -246,7 +252,11 @@ onMounted(() => {
               placeholder="起始日期"
               style="width: 160px"
               value-format="yyyy-MM-dd"
-            />
+            >
+              <template #prefix>
+                <el-icon><Calendar /></el-icon>
+              </template>
+            </el-date-picker>
             <span class="date-separator">至</span>
             <el-date-picker
               v-model="searchForm.expireDateBefore"
@@ -254,48 +264,56 @@ onMounted(() => {
               placeholder="结束日期"
               style="width: 160px"
               value-format="yyyy-MM-dd"
-            />
+            >
+              <template #prefix>
+                <el-icon><Calendar /></el-icon>
+              </template>
+            </el-date-picker>
           </el-form-item>
           
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleResetSearch">重置</el-button>
+            <el-button type="primary" @click="handleSearch">
+              <el-icon><Search /></el-icon> 查询
+            </el-button>
+            <el-button @click="handleResetSearch">
+              <el-icon><Refresh /></el-icon> 重置
+            </el-button>
           </el-form-item>
         </el-form>
       </div>
       
-      <!-- 操作按钮 -->
-      <div class="action-wrapper">
-        <el-button type="primary" @click="handleAdd">新增商品</el-button>
-      </div>
-      
-      <!-- 商品表格 -->
-      <div class="table-wrapper">
-        <el-table
-          :data="goodsList"
-          v-loading="loading"
-          border
-          style="width: 100%"
-        >
-          <el-table-column prop="goodsId" label="ID" width="80" />
-          <el-table-column prop="rfidTag" label="RFID标签" width="180" />
-          <el-table-column prop="category" label="商品类别" width="120">
-            <template #default="scope">
-              <el-tag v-if="scope.row.category === 'FOOD'" type="success">食品</el-tag>
-              <el-tag v-else-if="scope.row.category === 'ELECTRONICS'" type="warning">电子产品</el-tag>
-              <el-tag v-else-if="scope.row.category === 'CLOTHING'" type="info">衣物</el-tag>
-              <el-tag v-else-if="scope.row.category === 'DAILY_NECESSITIES'" type="primary">日用品</el-tag>
-              <el-tag v-else>其他</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="weight" label="重量(kg)" width="100" />
-          <el-table-column prop="expireDate" label="过期日期" width="150">
-            <template #default="scope">
+      <!-- 表格 -->
+      <el-table
+        :data="goodsList"
+        v-loading="loading"
+        border
+        stripe
+        style="width: 100%"
+        class="data-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
+      >
+        <el-table-column prop="goodsId" label="ID" width="80" min-width="80" align="center" />
+        <el-table-column prop="rfidTag" label="RFID标签" width="180" min-width="180" align="center" show-overflow-tooltip />
+        <el-table-column prop="category" label="商品类别" width="120" min-width="120" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.category === 'FOOD'" type="success">食品</el-tag>
+            <el-tag v-else-if="scope.row.category === 'ELECTRONICS'" type="warning">电子产品</el-tag>
+            <el-tag v-else-if="scope.row.category === 'CLOTHING'" type="info">衣物</el-tag>
+            <el-tag v-else-if="scope.row.category === 'DAILY_NECESSITIES'" type="primary">日用品</el-tag>
+            <el-tag v-else>其他</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="weight" label="重量(kg)" width="100" min-width="100" align="center" />
+        <el-table-column prop="expireDate" label="过期日期" width="150" min-width="150" align="center">
+          <template #default="scope">
+            <div class="date-cell">
               {{ formatDate(scope.row.expireDate) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="200">
-            <template #default="scope">
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" min-width="180" fixed="right" align="center">
+          <template #default="scope">
+            <div class="operation-buttons">
               <el-button 
                 type="primary" 
                 size="small" 
@@ -310,13 +328,13 @@ onMounted(() => {
               >
                 删除
               </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
       
       <!-- 分页 -->
-      <div class="pagination-wrapper">
+      <div class="pagination-area">
         <el-pagination
           v-if="total > 0"
           background
@@ -383,11 +401,117 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.goods-container {
+  padding: 20px;
+  height: calc(100vh - 60px);
+}
+
+.page-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #303133;
+}
+
+.page-title h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.content-area {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  min-height: calc(100vh - 180px);
+}
+
+.search-area {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+
+.add-button {
+  margin-left: auto;
+}
+
+.data-table {
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+:deep(.el-table__header-wrapper) {
+  padding: 12px 0;
+  font-size: 14px;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
+  background-color: #f9fafc;
+}
+
+:deep(.el-table__row) {
+  height: 60px;
+}
+
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
+}
+
+.date-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .date-separator {
   margin: 0 5px;
 }
 
-@media screen and (max-width: 768px) {
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-button--small) {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: 32px;
+  line-height: 16px;
+}
+
+.pagination-area {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .goods-container {
+    padding: 15px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .search-area {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .add-button {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+  
   .date-separator {
     display: block;
     margin: 10px 0;

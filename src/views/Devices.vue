@@ -251,8 +251,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="main-container">
-    <div class="page-header">
+  <div class="devices-container">
+    <div class="page-title">
       <h1>设备管理</h1>
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon> 添加设备
@@ -330,19 +330,23 @@ onMounted(() => {
         stripe
         style="width: 100%"
         class="data-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       >
         <el-table-column
           prop="deviceId"
           label="ID"
-          width="80"
+          min-width="70"
+          width="70"
           align="center">
         </el-table-column>
         
         <el-table-column
           prop="type"
           label="设备类型"
+          min-width="150"
           width="150"
-          align="center">
+          align="center"
+          show-overflow-tooltip>
           <template #default="scope">
             {{ getTypeLabel(scope.row.type) }}
           </template>
@@ -351,7 +355,8 @@ onMounted(() => {
         <el-table-column
           prop="status"
           label="状态"
-          width="120"
+          min-width="110"
+          width="110"
           align="center">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)" effect="light">
@@ -363,24 +368,30 @@ onMounted(() => {
         <el-table-column
           prop="lastMaintenance"
           label="最后维护日期"
-          align="center">
+          min-width="180"
+          align="center"
+          show-overflow-tooltip>
           <template #default="scope">
-            {{ formatDate(scope.row.lastMaintenance) }}
+            <div class="date-cell">
+              {{ formatDate(scope.row.lastMaintenance) }}
+            </div>
           </template>
         </el-table-column>
         
         <el-table-column
           label="操作"
-          width="220"
-          fixed="right"
+          min-width="180"
+          width="180"
           align="center">
           <template #default="scope">
-            <el-button type="primary" @click="handleEdit(scope.row)">
-              <el-icon><Edit /></el-icon> 编辑
-            </el-button>
-            <el-button type="danger" @click="handleDelete(scope.row.deviceId)">
-              <el-icon><Delete /></el-icon> 删除
-            </el-button>
+            <div class="operation-buttons">
+              <el-button type="primary" size="small" @click="handleEdit(scope.row)">
+                <el-icon><Edit /></el-icon> 编辑
+              </el-button>
+              <el-button type="danger" size="small" @click="handleDelete(scope.row.deviceId)">
+                <el-icon><Delete /></el-icon> 删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -460,160 +471,97 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.main-container {
+.devices-container {
   padding: 20px;
-  height: 100%;
+  height: calc(100vh - 60px);
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+.page-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #303133;
 }
 
-.page-header h1 {
+.page-title h1 {
   margin: 0;
   font-size: 22px;
   color: #303133;
   font-weight: 600;
 }
 
-.content-area {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  min-height: calc(100vh - 180px);
+.search-area {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
 }
 
-.search-area {
-  margin-bottom: 24px;
-  background-color: #f5f7fa;
-  padding: 20px;
-  border-radius: 8px;
+.add-button {
+  margin-left: auto;
 }
 
 .data-table {
-  margin-bottom: 24px;
-  font-size: 14px;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.pagination-area {
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-}
-
-.el-button {
-  font-size: 14px;
-  margin-right: 8px;
-}
-
-.el-button + .el-button {
-  margin-left: 8px;
-}
-
-:deep(.el-tag) {
-  padding: 0 12px;
-  font-size: 14px;
-  height: 32px;
-  line-height: 32px;
-}
-
-:deep(.el-table) {
-  font-size: 14px;
-}
-
-:deep(.el-table th) {
-  font-size: 15px;
-  font-weight: 600;
-  background-color: #f5f7fa;
-}
-
-:deep(.el-table--border) {
   border-radius: 8px;
   border: 1px solid #ebeef5;
 }
 
-:deep(.el-dialog) {
-  border-radius: 8px;
-  overflow: hidden;
+:deep(.el-table__header-wrapper) {
+  padding: 12px 0;
+  font-size: 14px;
 }
 
-:deep(.el-dialog__header) {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 15px 20px;
-  margin: 0;
-  background-color: #f9f9f9;
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
+  background-color: #f9fafc;
 }
 
-:deep(.el-dialog__title) {
-  font-weight: 600;
-  color: #303133;
+:deep(.el-table__row) {
+  height: 60px;
 }
 
-:deep(.el-dialog__body) {
-  padding: 24px;
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
 }
 
-:deep(.el-dialog__footer) {
-  border-top: 1px solid #f0f0f0;
-  padding: 15px 20px;
-  margin: 0;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-}
-
-:deep(.el-icon) {
-  margin-right: 4px;
-  vertical-align: middle;
-}
-
-:deep(.el-button) {
-  display: inline-flex;
+.date-cell {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 响应式调整 */
-@media screen and (max-width: 768px) {
-  .page-header {
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-button--small) {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: 32px;
+  line-height: 16px;
+}
+
+@media (max-width: 768px) {
+  .devices-container {
+    padding: 15px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .search-area {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .page-header h1 {
-    margin-bottom: 16px;
-  }
-  
-  .el-form-item {
-    margin-right: 0;
-    margin-bottom: 16px;
-    width: 100%;
-  }
-  
-  .search-area .el-form {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  :deep(.el-select) {
-    width: 100%;
-  }
-  
-  :deep(.el-date-editor.el-input) {
-    width: 100%;
-  }
-  
-  .el-button + .el-button {
+  .add-button {
     margin-left: 0;
-    margin-top: 8px;
+    margin-top: 10px;
   }
 }
 </style> 

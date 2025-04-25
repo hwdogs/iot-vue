@@ -42,7 +42,24 @@ export const userApi = {
   },
 
   searchUsers: (searchData) => {
-    return api.post('/user/getAllUserByCon', searchData)
+    // 创建一个基础参数对象
+    const params = {
+      pageNo: searchData.pageNo || 1,
+      pageSize: searchData.pageSize || 10
+    }
+
+    // 只有当username不为空时才添加该参数
+    if (searchData.username && searchData.username.trim() !== '') {
+      params.username = searchData.username.trim()
+    }
+
+    // 只有当role不为空时才添加该参数
+    if (searchData.role && searchData.role !== '') {
+      params.role = searchData.role
+    }
+
+    console.log('搜索用户参数:', JSON.stringify(params))
+    return api.post('/user/getAllUserByCon', params)
   },
 
   updatePasswordByEmail: (email, password) => {

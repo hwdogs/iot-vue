@@ -1,6 +1,8 @@
 <template>
   <div class="operation-logs-container">
-    <h1>操作日志</h1>
+    <div class="page-title">
+      <h1>操作日志</h1>
+    </div>
     
     <div class="content-area">
       <!-- 搜索区域 -->
@@ -24,12 +26,20 @@
               end-placeholder="结束日期"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
-            ></el-date-picker>
+            >
+              <template #prefix>
+                <el-icon><Calendar /></el-icon>
+              </template>
+            </el-date-picker>
           </el-form-item>
           
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="resetForm">重置</el-button>
+            <el-button type="primary" @click="handleSearch">
+              <el-icon><Search /></el-icon> 查询
+            </el-button>
+            <el-button @click="resetForm">
+              <el-icon><Refresh /></el-icon> 重置
+            </el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -42,17 +52,24 @@
         v-loading="loading"
         stripe
         class="data-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       >
-        <el-table-column prop="logId" label="ID" width="80"></el-table-column>
-        <el-table-column prop="operationType" label="操作类型" width="120"></el-table-column>
-        <el-table-column prop="timestamp" label="操作时间" width="180"></el-table-column>
-        <el-table-column prop="goodsId" label="商品ID" width="120"></el-table-column>
-        <el-table-column prop="deviceId" label="设备ID" width="120"></el-table-column>
-        <el-table-column prop="operatorId" label="操作人ID" width="120"></el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column prop="logId" label="ID" width="80" min-width="80" align="center"></el-table-column>
+        <el-table-column prop="operationType" label="操作类型" width="120" min-width="120" align="center"></el-table-column>
+        <el-table-column prop="timestamp" label="操作时间" width="180" min-width="180" align="center"></el-table-column>
+        <el-table-column prop="goodsId" label="商品ID" width="120" min-width="120" align="center"></el-table-column>
+        <el-table-column prop="deviceId" label="设备ID" width="120" min-width="120" align="center"></el-table-column>
+        <el-table-column prop="operatorId" label="操作人ID" width="120" min-width="120" align="center"></el-table-column>
+        <el-table-column label="操作" width="180" min-width="180" fixed="right" align="center">
           <template #default="scope">
-            <el-button size="small" type="primary" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <div class="operation-buttons">
+              <el-button size="small" type="primary" @click="handleDetail(scope.row)">
+                <el-icon><Document /></el-icon> 详情
+              </el-button>
+              <el-button size="small" type="danger" @click="handleDelete(scope.row)">
+                <el-icon><Delete /></el-icon> 删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -106,6 +123,7 @@
 <script>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Refresh, Calendar, Document, Delete } from '@element-plus/icons-vue'
 
 export default {
   name: 'OperationLogs',
@@ -239,23 +257,71 @@ export default {
 <style scoped>
 .operation-logs-container {
   padding: 20px;
-  height: 100%;
+  height: calc(100vh - 60px);
+}
+
+.page-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #303133;
+}
+
+.page-title h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #303133;
+  font-weight: 600;
 }
 
 .content-area {
   background-color: #fff;
-  border-radius: 4px;
-  padding: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   min-height: calc(100vh - 180px);
 }
 
 .search-area {
   margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
 }
 
 .data-table {
-  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+:deep(.el-table__header-wrapper) {
+  padding: 12px 0;
+  font-size: 14px;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
+  background-color: #f9fafc;
+}
+
+:deep(.el-table__row) {
+  height: 60px;
+}
+
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
+}
+
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-button--small) {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: 32px;
+  line-height: 16px;
 }
 
 .pagination-area {
@@ -272,5 +338,28 @@ export default {
 .log-detail-item .label {
   font-weight: bold;
   width: 100px;
+}
+
+@media (max-width: 768px) {
+  .operation-logs-container {
+    padding: 15px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .search-area {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  :deep(.el-select) {
+    width: 100%;
+  }
+  
+  :deep(.el-date-editor) {
+    width: 100% !important;
+  }
 }
 </style> 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { userApi } from '../api/user'
 import { 
@@ -71,13 +71,17 @@ const roleOptions = [
 
 // 获取角色标签
 const getRoleLabel = (role) => {
-  const option = roleOptions.find(item => item.value === role)
+  // 确保role是字符串类型
+  const roleStr = String(role)
+  const option = roleOptions.find(item => item.value === roleStr)
   return option ? option.label : '未知角色'
 }
 
 // 获取角色标签类型
 const getRoleType = (role) => {
-  switch (role) {
+  // 确保role是字符串类型
+  const roleStr = String(role)
+  switch (roleStr) {
     case '0': return 'danger'
     case '1': return 'warning'
     case '2': return 'success'
@@ -89,20 +93,72 @@ const getRoleType = (role) => {
 const fetchUsers = async () => {
   loading.value = true
   try {
-    if (searchForm.username || searchForm.role) {
+    let response
+    // 只有当username或role有实际值时才执行搜索，否则获取所有用户
+    const hasUsername = searchForm.username && searchForm.username.trim() !== ''
+    const hasRole = searchForm.role && searchForm.role !== ''
+    
+    if (hasUsername || hasRole) {
+      // 搜索时显示调试信息
+      console.log('执行搜索，条件:', JSON.stringify({
+        username: hasUsername ? searchForm.username : '未设置',
+        role: hasRole ? searchForm.role : '未设置',
+        pageNo: searchForm.pageNo,
+        pageSize: searchForm.pageSize
+      }))
       // Search with conditions
-      const response = await userApi.searchUsers(searchForm)
-      userList.value = response.data || []
-      total.value = response.total || userList.value.length
+      response = await userApi.searchUsers(searchForm)
     } else {
-      // Get all users
-      const response = await userApi.getAllUsers()
-      userList.value = response.data || []
+      // Get all users with pagination parameters
+      response = await userApi.getAllUsers({
+        pageNo: searchForm.pageNo,
+        pageSize: searchForm.pageSize
+      })
+    }
+
+    // 统一处理响应结果
+    console.log('获取到的数据:', response)
+    
+    // 检查响应格式并提取数据
+    if (response.data && Array.isArray(response.data)) {
+      userList.value = response.data.map(user => ({
+        ...user,
+        role: user.role !== undefined ? String(user.role) : user.role
+      }))
+    } else if (response.data && response.data.records && Array.isArray(response.data.records)) {
+      // 处理可能的分页格式
+      userList.value = response.data.records.map(user => ({
+        ...user,
+        role: user.role !== undefined ? String(user.role) : user.role
+      }))
+      total.value = response.data.total || 0
+    } else {
+      // 尝试直接使用响应
+      userList.value = Array.isArray(response) ? response.map(user => ({
+        ...user,
+        role: user.role !== undefined ? String(user.role) : user.role
+      })) : []
+    }
+    
+    // 设置总数
+    if (response.total) {
+      total.value = response.total
+    } else if (response.data && response.data.total) {
+      total.value = response.data.total
+    } else if (!total.value) {
       total.value = userList.value.length
+    }
+    
+    // 如果数据为空但有总数，可能是分页问题，尝试回到第一页
+    if (userList.value.length === 0 && total.value > 0 && searchForm.pageNo > 1) {
+      searchForm.pageNo = 1
+      await fetchUsers()
     }
   } catch (error) {
     console.error('Failed to fetch users:', error)
     ElMessage.error('获取用户列表失败')
+    userList.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -110,18 +166,20 @@ const fetchUsers = async () => {
 
 // Handle search
 const handleSearch = () => {
+  // 重置到第一页
   searchForm.pageNo = 1
   fetchUsers()
 }
 
 // Handle reset search
 const handleResetSearch = () => {
-  Object.assign(searchForm, {
-    username: '',
-    role: '',
-    pageNo: 1,
-    pageSize: 10
-  })
+  // 完全重置搜索条件
+  searchForm.username = ''
+  searchForm.role = ''
+  searchForm.pageNo = 1
+  searchForm.pageSize = 10
+  
+  // 获取所有用户数据
   fetchUsers()
 }
 
@@ -138,7 +196,16 @@ const handleEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑用户'
   resetForm()
-  Object.assign(userForm, row)
+  
+  // 复制并确保role是字符串类型
+  const userData = {...row}
+  if (userData.role !== undefined) {
+    userData.role = String(userData.role)
+  }
+  
+  console.log('编辑用户数据:', userData)
+  Object.assign(userForm, userData)
+  
   // Don't show passwords in edit mode
   userForm.passwordHash = ''
   userForm.passwordConfirm = ''
@@ -182,7 +249,9 @@ const submitForm = async () => {
       if (response.code === 200 || response.code === 20000) {
         ElMessage.success('更新成功')
         dialogVisible.value = false
-        fetchUsers()
+        // 重置到第一页并刷新数据
+        searchForm.pageNo = 1
+        await fetchUsers()
       } else {
         ElMessage.error(response.msg || '更新失败')
       }
@@ -192,7 +261,14 @@ const submitForm = async () => {
       if (response.code === 200 || response.code === 20000) {
         ElMessage.success('添加成功')
         dialogVisible.value = false
-        fetchUsers()
+        // 重置搜索条件，确保能看到新添加的用户
+        Object.assign(searchForm, {
+          username: '',
+          role: '',
+          pageNo: 1,
+          pageSize: 10
+        })
+        await fetchUsers()
       } else {
         ElMessage.error(response.msg || '添加失败')
       }
@@ -236,12 +312,32 @@ const handleSizeChange = (size) => {
 onMounted(() => {
   fetchUsers()
 })
+
+// 监听role变化
+watch(() => searchForm.role, (newVal, oldVal) => {
+  console.log('角色选择变化:', {
+    newValue: newVal,
+    oldValue: oldVal,
+    valueType: typeof newVal
+  })
+})
+
+// 监听userForm.role变化
+watch(() => userForm.role, (newVal, oldVal) => {
+  console.log('编辑用户角色变化:', {
+    newValue: newVal,
+    oldValue: oldVal,
+    valueType: typeof newVal
+  })
+})
 </script>
 
 <template>
   <div class="main-container">
     <div class="page-header">
       <h1>用户管理</h1>
+    </div>
+    <div class="add-user-button">
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon> 添加用户
       </el-button>
@@ -260,12 +356,31 @@ onMounted(() => {
           </el-form-item>
           
           <el-form-item label="角色">
-            <el-select v-model="searchForm.role" placeholder="请选择角色" clearable>
+            <el-select 
+              v-model="searchForm.role" 
+              placeholder="请选择角色" 
+              clearable
+              popper-class="role-select-dropdown"
+              :teleported="false">
+              <template #prefix v-if="searchForm.role">
+                <el-tag size="small" effect="plain" class="selected-role-tag">
+                  {{ getRoleLabel(searchForm.role) }}
+                </el-tag>
+              </template>
               <el-option 
                 v-for="item in roleOptions"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value">
+                <div class="role-option-container">
+                  <el-tag 
+                    :type="getRoleType(item.value)" 
+                    effect="light" 
+                    size="small" 
+                    class="role-tag">
+                    {{ item.label }}
+                  </el-tag>
+                </div>
               </el-option>
             </el-select>
           </el-form-item>
@@ -279,6 +394,30 @@ onMounted(() => {
             </el-button>
           </el-form-item>
         </el-form>
+        
+        <!-- 当前筛选条件提示 -->
+        <div class="current-filters" v-if="searchForm.username || searchForm.role">
+          <span class="filter-label">当前筛选:</span>
+          <el-tag 
+            v-if="searchForm.username" 
+            size="small" 
+            effect="light" 
+            class="filter-tag" 
+            closable
+            @close="searchForm.username = ''; handleSearch()">
+            用户名: {{ searchForm.username }}
+          </el-tag>
+          <el-tag 
+            v-if="searchForm.role" 
+            size="small" 
+            :type="getRoleType(searchForm.role)"
+            effect="light" 
+            class="filter-tag" 
+            closable
+            @close="searchForm.role = ''; handleSearch()">
+            角色: {{ getRoleLabel(searchForm.role) }}
+          </el-tag>
+        </div>
       </div>
       
       <!-- 表格 -->
@@ -289,53 +428,70 @@ onMounted(() => {
         stripe
         style="width: 100%"
         class="data-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       >
         <el-table-column
           prop="userId"
           label="ID"
-          width="80"
+          min-width="70"
+          width="70"
           align="center">
         </el-table-column>
         
         <el-table-column
           prop="username"
           label="用户名"
+          min-width="120"
           width="120"
-          align="center">
+          align="center"
+          show-overflow-tooltip>
         </el-table-column>
         
         <el-table-column
           prop="email"
           label="邮箱"
-          align="center">
+          min-width="200"
+          align="center"
+          show-overflow-tooltip>
+          <!-- <template #default="scope">
+            <div class="email-cell">
+              <el-tooltip 
+                :content="scope.row.email" 
+                placement="top" 
+                :hide-after="1500">
+                <span class="email-text">{{ scope.row.email }}</span>
+              </el-tooltip>
+            </div>
+          </template> -->
         </el-table-column>
         
         <el-table-column
           prop="role"
           label="角色"
-          width="150"
+          min-width="110"
+          width="110"
           align="center">
           <template #default="scope">
             <el-tag :type="getRoleType(scope.row.role)" effect="light">
-              {{ scope.row.role === 0 || scope.row.role === '0' ? '系统管理员' : 
-                 scope.row.role === 1 || scope.row.role === '1' ? '仓库管理员' : 
-                 scope.row.role === 2 || scope.row.role === '2' ? '供应链经理' : '未知角色' }}
+              {{ getRoleLabel(String(scope.row.role)) }}
             </el-tag>
           </template>
         </el-table-column>
         
         <el-table-column
           label="操作"
-          width="220"
-          fixed="right"
+          min-width="180"
+          width="180"
           align="center">
           <template #default="scope">
-            <el-button type="primary" @click="handleEdit(scope.row)">
-              <el-icon><Edit /></el-icon> 编辑
-            </el-button>
-            <el-button type="danger" @click="handleDelete(scope.row.userId)">
-              <el-icon><Delete /></el-icon> 删除
-            </el-button>
+            <div class="operation-buttons">
+              <el-button type="primary" size="small" @click="handleEdit(scope.row)">
+                <el-icon><Edit /></el-icon> 编辑
+              </el-button>
+              <el-button type="danger" size="small" @click="handleDelete(scope.row.userId)">
+                <el-icon><Delete /></el-icon> 删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -421,9 +577,9 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .page-header h1 {
@@ -431,6 +587,10 @@ onMounted(() => {
   font-size: 22px;
   color: #303133;
   font-weight: 600;
+}
+
+.add-user-button {
+  margin-bottom: 16px;
 }
 
 .content-area {
@@ -449,9 +609,7 @@ onMounted(() => {
 }
 
 .data-table {
-  margin-bottom: 24px;
-  font-size: 14px;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -496,6 +654,20 @@ onMounted(() => {
 :deep(.el-table--border) {
   border-radius: 8px;
   border: 1px solid #ebeef5;
+  overflow: hidden;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background-color: #f9fafc;
+}
+
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
+}
+
+:deep(.el-table th) {
+  padding: 12px 0;
+  font-size: 14px;
 }
 
 :deep(.el-dialog) {
@@ -567,5 +739,114 @@ onMounted(() => {
     margin-left: 0;
     margin-top: 8px;
   }
+}
+
+/* 角色选择相关样式 */
+.role-option-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.role-tag {
+  margin-right: 5px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.selected-role-tag {
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+:deep(.el-select .el-input__inner) {
+  padding-left: 15px;
+}
+
+:deep(.el-select-dropdown__item) {
+  padding: 0 20px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  padding-right: 30px;
+}
+
+:deep(.el-select .el-input__inner) {
+  cursor: pointer;
+}
+
+/* 高亮当前选中的角色 */
+:deep(.el-select-dropdown__item.selected) {
+  background-color: var(--el-fill-color-light);
+  font-weight: normal;
+}
+
+:deep(.el-select-dropdown__item.selected .role-tag) {
+  font-weight: bold;
+}
+
+/* 当前筛选条件样式 */
+.current-filters {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  color: var(--el-text-color-secondary);
+  margin-right: 10px;
+  font-size: 13px;
+}
+
+.filter-tag {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+/* 表格相关样式 */
+.data-table {
+  margin-bottom: 24px;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.el-table__row) {
+  height: 60px;
+}
+
+.email-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.email-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: inline-block;
+}
+
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-button.el-button--small) {
+  padding: 6px 10px;
+  font-size: 12px;
+  height: 32px;
+}
+
+:deep(.el-table .cell) {
+  word-break: break-word;
+  line-height: 1.5;
+  padding: 0 8px;
 }
 </style> 

@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { shelfApi } from '../api/shelf'
 import { warehouseApi } from '../api/warehouse'
+import { Plus, Search, Refresh } from '@element-plus/icons-vue'
 
 // 数据
 const shelfList = ref([])
@@ -227,12 +228,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container-fluid">
-    <h1 class="page-title">货架管理</h1>
+  <div class="shelves-container">
+    <div class="page-title">
+      <h1>货架管理</h1>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon> 新增货架
+      </el-button>
+    </div>
 
-    <div class="content-wrapper">
+    <div class="content-area">
       <!-- 搜索区域 -->
-      <div class="search-wrapper">
+      <div class="search-area">
         <el-form :model="searchForm" :inline="true" class="search-form">
           <el-form-item label="所属仓库">
             <el-select v-model="searchForm.warehouseId" placeholder="请选择仓库" clearable>
@@ -248,50 +254,63 @@ onMounted(() => {
           </el-form-item>
 
           <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-            <el-button @click="handleResetSearch">重置</el-button>
+            <el-button type="primary" @click="handleSearch">
+              <el-icon><Search /></el-icon> 查询
+            </el-button>
+            <el-button @click="handleResetSearch">
+              <el-icon><Refresh /></el-icon> 重置
+            </el-button>
           </el-form-item>
         </el-form>
       </div>
 
-      <!-- 操作按钮 -->
-      <div class="action-wrapper">
-        <el-button type="primary" @click="handleAdd">新增货架</el-button>
-      </div>
-
-      <!-- 货架表格 -->
-      <div class="table-wrapper">
-        <el-table :data="shelfList" v-loading="loading" border style="width: 100%">
-          <el-table-column prop="shelfId" label="ID" width="80" />
-          <el-table-column label="所属仓库" width="150">
-            <template #default="scope">
-              {{ getWarehouseName(scope.row.warehouseId) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="位置" width="180">
-            <template #default="scope">
-              X: {{ scope.row.positionX }}, Y: {{ scope.row.positionY }}, Z: {{ scope.row.positionZ }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="capacity" label="容量" width="100" />
-          <el-table-column label="操作" width="200">
-            <template #default="scope">
+      <!-- 表格 -->
+      <el-table
+        :data="shelfList"
+        v-loading="loading"
+        border
+        stripe
+        style="width: 100%"
+        class="data-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }">
+        <el-table-column prop="shelfId" label="ID" width="80" min-width="80" align="center" />
+        <el-table-column label="所属仓库" width="150" min-width="150" align="center">
+          <template #default="scope">
+            {{ getWarehouseName(scope.row.warehouseId) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="位置" width="180" min-width="180" align="center" show-overflow-tooltip>
+          <template #default="scope">
+            X: {{ scope.row.positionX }}, Y: {{ scope.row.positionY }}, Z: {{ scope.row.positionZ }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="capacity" label="容量" width="100" min-width="100" align="center" />
+        <el-table-column label="操作" width="180" min-width="180" fixed="right" align="center">
+          <template #default="scope">
+            <div class="operation-buttons">
               <el-button type="primary" size="small" @click="handleEdit(scope.row)">
                 编辑
               </el-button>
               <el-button type="danger" size="small" @click="handleDelete(scope.row.shelfId)">
                 删除
               </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
 
       <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <el-pagination v-if="total > 0" background layout="total, sizes, prev, pager, next, jumper" :total="total"
-          :page-size="searchForm.pageSize" :current-page="searchForm.pageNo" :page-sizes="[10, 20, 50, 100]"
-          @size-change="handleSizeChange" @current-change="handlePageChange" />
+      <div class="pagination-area">
+        <el-pagination 
+          v-if="total > 0" 
+          background 
+          layout="total, sizes, prev, pager, next, jumper" 
+          :total="total"
+          :page-size="searchForm.pageSize" 
+          :current-page="searchForm.pageNo" 
+          :page-sizes="[10, 20, 50, 100]"
+          @size-change="handleSizeChange" 
+          @current-change="handlePageChange" />
       </div>
     </div>
 
@@ -331,40 +350,108 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.range-separator {
-  margin: 0 5px;
-}
-
-.container-fluid {
-  width: 100%;
-  min-height: 100vh;
+.shelves-container {
   padding: 20px;
-  box-sizing: border-box;
-}
-
-.content-wrapper {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.search-wrapper,
-.action-wrapper,
-.pagination-wrapper {
-  margin-bottom: 20px;
+  height: calc(100vh - 60px);
 }
 
 .page-title {
   margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  color: #303133;
 }
 
-@media screen and (max-width: 768px) {
+.page-title h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.content-area {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  min-height: calc(100vh - 180px);
+}
+
+.range-separator {
+  margin: 0 5px;
+}
+
+.search-area {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+
+.add-button {
+  margin-left: auto;
+}
+
+.data-table {
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+}
+
+:deep(.el-table__header-wrapper) {
+  padding: 12px 0;
+  font-size: 14px;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
+  background-color: #f9fafc;
+}
+
+:deep(.el-table__row) {
+  height: 60px;
+}
+
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
+}
+
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+:deep(.el-button--small) {
+  padding: 8px 12px;
+  font-size: 12px;
+  height: 32px;
+  line-height: 16px;
+}
+
+.pagination-area {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .shelves-container {
+    padding: 15px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .search-area {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .add-button {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+  
   .range-separator {
     display: block;
     margin: 10px 0;
@@ -377,10 +464,6 @@ onMounted(() => {
 
   :deep(.el-select) {
     width: 100%;
-  }
-
-  .container-fluid {
-    padding: 10px;
   }
 }
 </style>

@@ -1,0 +1,232 @@
+/* 全局响应式布局样式 */
+
+/* 内容容器 */
+.container-fluid {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* 内容区域 */
+.content-wrapper {
+  flex: 1;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* 标题区域 */
+.page-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* 搜索区域 */
+.search-wrapper {
+  margin-bottom: 20px;
+}
+
+/* 操作按钮区域 */
+.action-wrapper {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* 表格区域 */
+.table-wrapper {
+  margin-bottom: 20px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 分页区域 */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Element Plus 组件响应式调整 */
+.el-form--inline .el-form-item {
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+.el-dialog {
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+.el-table {
+  width: 100% !important;
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 1200px) {
+  .container-fluid {
+    padding: 15px;
+  }
+
+  .content-wrapper {
+    padding: 15px;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .action-wrapper {
+    flex-wrap: wrap;
+  }
+
+  .el-form--inline .el-form-item {
+    margin-right: 15px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .container-fluid {
+    padding: 10px;
+  }
+
+  .content-wrapper {
+    padding: 10px;
+  }
+
+  .el-form--inline {
+    display: block;
+  }
+
+  .el-form--inline .el-form-item {
+    display: block;
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+
+  .action-wrapper {
+    flex-direction: column;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  /* 表格适配小屏幕 */
+  .el-table__header {
+    min-width: 100%;
+  }
+
+  /* 分页组件适配 */
+  .el-pagination {
+    white-space: normal;
+    flex-wrap: wrap;
+  }
+}
+
+/* 全局样式 */
+
+/* 成功通知的全局样式 */
+.el-notification.el-notification--success {
+  background-color: #f0f9eb;
+  border-color: #e1f3d8;
+}
+
+.el-notification.el-notification--success .el-notification__title {
+  color: #67C23A;
+  font-weight: bold;
+}
+
+.el-notification.el-notification--success .el-notification__content {
+  color: #67C23A;
+}
+
+/* 错误通知的全局样式 */
+.el-notification.el-notification--error {
+  background-color: #fef0f0;
+  border-color: #fde2e2;
+}
+
+.el-notification.el-notification--error .el-notification__title {
+  color: #F56C6C;
+  font-weight: bold;
+}
+
+.el-notification.el-notification--error .el-notification__content {
+  color: #F56C6C;
+}
+
+/* 自定义成功通知样式类 */
+.success-notification {
+  background-color: #f0f9eb !important;
+  border-color: #e1f3d8 !important;
+}
+
+.success-notification .el-notification__title {
+  color: #67C23A !important;
+  font-weight: bold;
+}
+
+.success-notification .el-notification__content {
+  color: #67C23A !important;
+}
+
+/* 全局表单验证样式优化 */
+.el-form-item.is-error .el-input__wrapper {
+  box-shadow: 0 0 0 1px rgba(245, 108, 108, 0.5) inset !important;
+}
+
+.el-form-item.is-error .el-form-item__error {
+  color: #F56C6C;
+  font-size: 12px;
+  line-height: 1.2;
+  padding-top: 4px;
+  border-radius: 2px;
+}
+
+/* 规范状态图标颜色 */
+.el-form-item.is-error .el-input__validateIcon {
+  color: #F56C6C !important;
+}
+
+.el-form-item.is-success .el-input__validateIcon {
+  color: #67C23A !important;
+}
+
+/* 自定义错误消息样式 */
+.custom-error-message {
+  background-color: #FEF0F0 !important;
+  border-color: #FDE2E2 !important;
+  color: #F56C6C !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
+  padding: 10px 15px;
+}
+
+.custom-error-message .el-message__content {
+  color: #F56C6C !important;
+  font-weight: 500;
+}
+
+.custom-error-message .el-message__icon {
+  display: none;
+}
+
+/* 改进表单验证标记样式 */
+.el-form-item__error--inline {
+  position: relative;
+  top: 0;
+  left: 0;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+/* 设置password输入框的错误状态 */
+.el-form-item.is-error .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #F56C6C inset !important;
+}
